@@ -16,32 +16,32 @@ from scipy.io import mmread
 import networkx as nx
 from scipy.optimize import minimize_scalar
 
-"""NON RUNNARE (è solo un esempio)"""
+"""Appunti"""
 
 # Weights: must X_i >= 0 and sum(X) = 1 (X_i in [0,1])
 # They are not probabilities in a statistical sense. They measure how much the optimizer believes each vertex belongs to the clique.
 # Larger weight: node i is very important
 # Smaller weight: node i is probably outside the clique
-X = np.random.random(((A2.shape[1], 1)))
-X = X/sum(X)
-X
+#X = np.random.random(((A2.shape[1], 1)))
+#X = X/sum(X)
+#X
 
 # We must maximize the function: f(X) = X.T @ A2 @ X
 # From theory: if the maximum clique C has size s, the maximum f(X) = 1 - 1/s
 # Also: X_i in C = 1/s, 0 otherwise (wiegths corresponding to nodes in the maximum clique will have value 1/s)
-f_x = X.T @ A2 @ X # Since A_ij = 1 only if an edge exists, the objective is the weighted sum of all edges.
-print('f(x) =', round(float(f_x), 5))
-max_f_x = 1 - (1/4)
-print('max_f(x) =', max_f_x)
+#f_x = X.T @ A2 @ X # Since A_ij = 1 only if an edge exists, the objective is the weighted sum of all edges.
+#print('f(x) =', round(float(f_x), 5))
+#max_f_x = 1 - (1/4)
+#print('max_f(x) =', max_f_x)
 
 """Gradient: since differentiating with respect to one coordinate $x_k$ results in $2$ identical sums $\sum_{j}{A_{kj}x_j} + \sum_{i}{A_{ik}x_i}$ and since the graph is undirected ($A=A^T$), the two sums are identical. Therefore, $\frac{\partial f}{\partial x_k}=2\sum_{j}{A_{kj} x_j}$ or, in vector notation, $\nabla f(x)=2Ax$."""
 
-grad = 2 * A2 @ X
-print(grad)
-i = np.argmax(grad)
-s = np.zeros_like(X)
-s[i] = 1.0
-print(s)
+#grad = 2 * A2 @ X
+#print(grad)
+#i = np.argmax(grad)
+#s = np.zeros_like(X)
+#s[i] = 1.0
+#print(s)
 
 """CODICE"""
 
@@ -301,62 +301,54 @@ def greedy_verification(x, A):
 
     return len(clique)
 
-def ex_line_search(x, A, d, reg_method, alpha_2, gamma_max = 1.0):
+def ex_line_search(x, A, d, reg_method, alpha_2, gamma_max=1.0):
 
     if reg_method == '2norm':
 
         dAd = float(d.T @ A @ d)
-        dAx = float(d.T @ A @ x)
+        dx = float(d.T @ x)
 
-        a = dAd + 0.5 * (d.T @ d)
-        b = 2.0 * dAx + (d.T @ x)
+        a = dAd + 0.5 * float(d.T @ d)
+        b = 2.0 * float(d.T @ A @ x) + dx
 
-        if abs(a) < 1e-14:
-            gamma = gamma_max if b > 0 else 0.0
-        else:
-            gamma = -b / (2.0 * a)
-            gamma = float(np.clip(gamma, 0.0, gamma_max))
+        candidates = [0.0, gamma_max]
 
-        x_new = x + gamma * d
-        f_new = obj_function(x_new, A, reg_method)
+        if abs(a) > 1e-14:
 
-        return x_new, f_new
+            gamma_star = -b / (2.0 * a)
 
-    elif reg_method == 'expreg':
+            if 0.0 <= gamma_star <= gamma_max:
+                candidates.append(gamma_star)
 
-        def objective_gamma(gamma):
-            x_gamma = x + gamma * d
-            return -(x_gamma.T @ A @ x_gamma + alpha_2 * np.sum(np.exp(-5 * x_gamma) - 1))
-
-        # No close solution for expreg, use numerical method
-        result = minimize_scalar(objective_gamma, bounds=(0.0, gamma_max), method='bounded')
-        gamma = result.x
-
-        x_new = x + gamma * d
-        f_new = obj_function(x_new, A, reg_method, alpha_2)
-
-        return x_new, f_new
-
-    else:
+    elif reg_method == 'noreg':
 
         dAd = float(d.T @ A @ d)
         dAx = float(d.T @ A @ x)
 
-        if abs(dAd) < 1e-14:
-            if dAx > 1e-14:
-                gamma = gamma_max
-            elif dAx < -1e-14:
-                gamma = 0.0
-            else:
-                gamma = 0.0
-        else:
-            gamma = -dAx / dAd
-            gamma = float(np.clip(gamma, 0.0, gamma_max))
+        candidates = [0.0, gamma_max]
 
-        x_new = x + gamma * d
-        f_new = obj_function(x_new, A, reg_method)
+        if abs(dAd) > 1e-14:
 
-        return x_new, f_new
+            gamma_star = -dAx / dAd
+
+            if 0.0 <= gamma_star <= gamma_max:
+                candidates.append(gamma_star)
+
+    elif reg_method == 'expreg':
+
+        def objective_gamma(gamma):
+            return -obj_function(x + gamma * d, A, reg_method, alpha_2)
+
+        result = minimize_scalar(objective_gamma, bounds=(0.0, gamma_max), method='bounded')
+
+        candidates = [0.0, gamma_max, result.x]
+
+    # Select gamma giving maximum objective
+    best_gamma = max(candidates, key=lambda g: obj_function(x + g * d, A, reg_method, alpha_2))
+    x_new = x + best_gamma * d
+    f_new = obj_function(x_new, A, reg_method, alpha_2)
+
+    return x_new, f_new
 
 # Armijo rule
 
@@ -391,7 +383,7 @@ def obj_function(x, A, reg_method, alpha_2 = 0.04):
         return float(x.T @ A @ x + 0.5 * (x.T @ x))
     elif reg_method == 'expreg':
         return float(x.T @ A @ x + alpha_2 * np.sum(np.exp(-5 * x) - 1))
-    else:
+    elif reg_method == 'noreg':
         return float(x.T @ A @ x)
 
 # LMO
@@ -423,14 +415,14 @@ def frank_wolfe(max_iter=5000,
     n_clique = [greedy_verification(x, A)]
 
     # Regularization method
-    ## 2 Norm
+    ## L2 Norm regularization
     if reg_method == '2norm':
         #starting time
         start_time = time.time()
         f_history = [obj_function(x, A, reg_method)]
         time_l.append(time.time() - start_time)
 
-    ## 2 Norm
+    ## L0 Exp regularization
     elif reg_method == 'expreg':
         start_time = time.time()
         f_history = [obj_function(x, A, reg_method, alpha_2)]
@@ -469,6 +461,7 @@ def frank_wolfe(max_iter=5000,
         #check stop condition
         if (i > 0 and fw_gap < tol):
             print(f'Tolerance of the frank-wolf algorithm was reached at time: {round(time.time() - start_time, 5)}, iter: {i}')
+            # Verify local maximum
             break
 
         # Choose direction
