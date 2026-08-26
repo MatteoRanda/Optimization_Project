@@ -322,7 +322,7 @@ def ex_line_search(x, A, Ax, d, reg_method, alpha_2, gamma_max=1.0):
         candidates = [0.0, gamma_max, result.x]
 
     # Select gamma giving maximum objective
-    f_new = 0
+    f_new = -np.inf
     x_new = np.zeros(A.shape[0]).reshape(-1, 1)
     for g in candidates:
         x_g = x + g * d
@@ -423,9 +423,9 @@ def frank_wolfe(max_iter=5000,
         Ax = A @ x
         # Gradient
         if reg_method == '2norm':
-            grad = 2 * A @ x + x
+            grad = 2 * Ax + x
         elif reg_method == 'expreg':
-            grad = 2 * A @ x - alpha_2 * 5 * np.exp(-5 * x)
+            grad = 2 * Ax - alpha_2 * 5 * np.exp(-5 * x)
 
         # LMO
         d_fw, s, fw_gap = LMO(x, grad)
@@ -471,7 +471,7 @@ def frank_wolfe(max_iter=5000,
 
 
         if step_strat == 'line_search':
-            x_new, f_x = ex_line_search(x, A, d, reg_method, alpha_2, gamma_max)
+            x_new, f_x = ex_line_search(x, A, Ax, d, reg_method, alpha_2, gamma_max)
         elif step_strat == 'armijo':
             x_new, f_x = armijo(x, A, Ax, d, grad, reg_method,
                                 alpha_2, alpha = gamma_max#, delta=0.5, c=1e-4
@@ -550,7 +550,7 @@ def experiments(fw_variant,
                 tol = tolerance,
                 max_time = max_time)
 
-        esults.append({
+        results.append({
             "trial": trial,
             #"X": fw['X'],
             #"Local_maximum": fw['Local_max'],
@@ -614,7 +614,7 @@ def multi_experiments(exp_num, algo_params, algo_names):
         algo_res.append(res)
 
         if i != exp_num-1:
-            sleep(30) # Pausa di un minuto per lasciare raffreddare il computer
+            time.sleep(30) # Pausa di un minuto per lasciare raffreddare il computer
 
     return algo_res
 
