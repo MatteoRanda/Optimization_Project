@@ -45,21 +45,20 @@ from scipy.optimize import minimize_scalar
 
 """CODICE"""
 
-def plots(experiments, max_clique, alpha=0.15, highlight_best=True, highlight_avg=True):
+def plots(experiments, max_clique, highlight_best=True, highlight_avg=True):
 
     fig, axes = plt.subplots(
-        nrows=1,
-        ncols=4,
-        figsize=(25, 5))
+        nrows=2,
+        ncols=2,
+        figsize=(20, 10))
 
-    ax1, ax2, ax3, ax4 = axes
+    ax1, ax2, ax3, ax4 = axes.flatten()
 
     # Find the best experiment
-
     clique_sizes = [
         exp["Clique"][-1] # List of last clique lengths (at convergence of each experiment)
         for exp in experiments]
-
+    
     best_clique = np.max(clique_sizes) # Maximum clique size found
 
     max_clique_idx = [
@@ -69,10 +68,9 @@ def plots(experiments, max_clique, alpha=0.15, highlight_best=True, highlight_av
     best_idx = min(
         max_clique_idx,
         key=lambda i: experiments[i]["Time"][-1]) # Among those, select the one with minimum time
-
+    
     # General grid
-
-    for ax in axes:
+    for ax in axes.flatten():
         ax.grid(
             True,
             linestyle="--",
@@ -80,94 +78,91 @@ def plots(experiments, max_clique, alpha=0.15, highlight_best=True, highlight_av
             alpha=0.7)
 
     # Plot all experiments
-
     for i, exp in enumerate(experiments):
 
         # Objective vs Iterations
         ax1.plot(
             exp["Objective function"],
             color = 'blue',
-            alpha=alpha)
-
-        # Clique vs Iterations
-        ax2.plot(
-            exp["Clique"],
-            color = 'blue',
-            alpha=alpha)
-
+            alpha=0.1)
+        
         # Objective vs Time
-        ax3.plot(
+        ax2.plot(
             exp["Time"],
             exp["Objective function"],
             color = 'blue',
-            alpha=alpha)
+            alpha=0.1)
+        
+        # Clique vs Iterations
+        ax3.plot(
+            exp["Clique"],
+            color = 'blue',
+            alpha=0.1)
 
         # Clique vs Time
         ax4.plot(
             exp["Time"],
             exp["Clique"],
             color = 'blue',
-            alpha=alpha)
+            alpha=0.1)
 
     # Average per iteration
-
-    min_iterations = min(
-        len(exp["Objective function"])
-        for exp in experiments)
-
-    avg_objective = []
-    avg_clique = []
+    min_iterations = min( 
+        len(exp["Objective function"]) 
+        for exp in experiments) 
+    
+    avg_objective = [] 
+    avg_clique = [] 
     avg_time = []
-
-    for i in range(min_iterations):
-        objective_values = [
-            exp["Objective function"][i]
-            for exp in experiments
+    
+    for i in range(min_iterations): 
+        objective_values = [ 
+            exp["Objective function"][i] 
+            for exp in experiments 
             if i < len(exp["Objective function"])]
-
+        
         clique_values = [
-            exp["Clique"][i]
-            for exp in experiments
-            if i < len(exp["Clique"])]
+            exp["Clique"][i] 
+            for exp in experiments 
+            if i < len(exp["Clique"])] 
 
         time_values = [
-            exp["Time"][i]
-            for exp in experiments
-            if i < len(exp["Time"])]
-
-        avg_objective.append(np.mean(objective_values))
-        avg_clique.append(np.mean(clique_values))
-        avg_time.append(np.mean(time_values))
-
-    # Plot averages
+            exp["Time"][i] 
+            for exp in experiments 
+            if i < len(exp["Time"])] 
+        
+        avg_objective.append(np.mean(objective_values)) 
+        avg_clique.append(np.mean(clique_values)) 
+        avg_time.append(np.mean(time_values)) 
+        
+    # Plot averages 
     ax1.plot(
         avg_objective,
-        linewidth=2,
+        linewidth=2, 
         color = 'orange',
-        label="Average")
-
+        label="Average") 
+    
     ax2.plot(
-        avg_clique,
-        linewidth=2,
-        color = 'orange',
-        label="Average")
-
-    ax3.plot(
         avg_time,
         avg_objective,
-        linewidth=2,
+        linewidth=2, 
         color = 'orange',
         label="Average")
-
+    
+    ax3.plot( 
+        avg_clique,
+        linewidth=2, 
+        color = 'orange',
+        label="Average")
+    
     ax4.plot(
         avg_time,
         avg_clique,
-        linewidth=2,
+        linewidth=2, 
         color = 'orange',
         label="Average")
 
     # Highlight best experiment
-
     if highlight_best:
 
         best = experiments[best_idx]
@@ -179,14 +174,14 @@ def plots(experiments, max_clique, alpha=0.15, highlight_best=True, highlight_av
             label=f"Best run ({best_idx})")
 
         ax2.plot(
-            best["Clique"],
+            best["Time"],
+            best["Objective function"],
             linewidth=2,
             color = 'red',
             label=f"Best run ({best_idx})")
 
         ax3.plot(
-            best["Time"],
-            best["Objective function"],
+            best["Clique"],
             linewidth=2,
             color = 'red',
             label=f"Best run ({best_idx})")
@@ -199,8 +194,7 @@ def plots(experiments, max_clique, alpha=0.15, highlight_best=True, highlight_av
             label=f"Best run ({best_idx})")
 
     # Maximum clique reference
-
-    ax2.axhline(
+    ax3.axhline(
         max_clique,
         linestyle="--",
         color="green",
@@ -213,25 +207,23 @@ def plots(experiments, max_clique, alpha=0.15, highlight_best=True, highlight_av
         label=f"Known maximum = {max_clique}")
 
     # Titles and labels
-
     ax1.set_title("Objective Function vs Iterations")
     ax1.set_xlabel("Iteration")
     ax1.set_ylabel("Objective")
 
-    ax2.set_title("Clique vs Iterations")
-    ax2.set_xlabel("Iteration")
-    ax2.set_ylabel("Clique size")
-
-    ax3.set_title("Objective Function vs Time")
-    ax3.set_xlabel("Time (seconds)")
-    ax3.set_ylabel("Objective")
-
+    ax2.set_title("Objective Function vs Time")
+    ax2.set_xlabel("Time (seconds)")
+    ax2.set_ylabel("Objective")
+    
+    ax3.set_title("Clique vs Iterations")
+    ax3.set_xlabel("Iteration")
+    ax3.set_ylabel("Clique size")
+    
     ax4.set_title("Clique vs Time")
     ax4.set_xlabel("Time (seconds)")
     ax4.set_ylabel("Clique size")
 
     # Y limits for clique plots
-
     all_cliques = [
         clique
         for exp in experiments
@@ -239,7 +231,7 @@ def plots(experiments, max_clique, alpha=0.15, highlight_best=True, highlight_av
 
     min_clique = min(all_cliques)
 
-    ax2.set_ylim(
+    ax3.set_ylim(
         min_clique - 1,
         max_clique + 5)
 
@@ -301,7 +293,7 @@ def greedy_verification(x, A):
 
     return len(clique)
 
-def ex_line_search(x, A, d, reg_method, alpha_2, gamma_max=1.0):
+def ex_line_search(x, A, Ax, d, reg_method, alpha_2, gamma_max=1.0):
 
     if reg_method == '2norm':
 
@@ -309,27 +301,13 @@ def ex_line_search(x, A, d, reg_method, alpha_2, gamma_max=1.0):
         dx = float(d.T @ x)
 
         a = dAd + 0.5 * float(d.T @ d)
-        b = 2.0 * float(d.T @ A @ x) + dx
+        b = 2.0 * float(d.T @ Ax) + dx
 
         candidates = [0.0, gamma_max]
 
         if abs(a) > 1e-14:
 
             gamma_star = -b / (2.0 * a)
-
-            if 0.0 <= gamma_star <= gamma_max:
-                candidates.append(gamma_star)
-
-    elif reg_method == 'noreg':
-
-        dAd = float(d.T @ A @ d)
-        dAx = float(d.T @ A @ x)
-
-        candidates = [0.0, gamma_max]
-
-        if abs(dAd) > 1e-14:
-
-            gamma_star = -dAx / dAd
 
             if 0.0 <= gamma_star <= gamma_max:
                 candidates.append(gamma_star)
@@ -344,18 +322,26 @@ def ex_line_search(x, A, d, reg_method, alpha_2, gamma_max=1.0):
         candidates = [0.0, gamma_max, result.x]
 
     # Select gamma giving maximum objective
-    best_gamma = max(candidates, key=lambda g: obj_function(x + g * d, A, reg_method, alpha_2))
-    x_new = x + best_gamma * d
-    f_new = obj_function(x_new, A, reg_method, alpha_2)
+    f_new = 0
+    x_new = np.zeros(A.shape[0]).reshape(-1, 1)
+    for g in candidates:
+        x_g = x + g * d
+        f_x = obj_function(x_g, A, reg_method, alpha_2)
+        if f_x > f_new:
+            f_new = f_x
+            x_new = x_g
+    #best_gamma = max(candidates, key=lambda g: obj_function(x + g * d, A, reg_method, alpha_2))
+    #x_new = x + best_gamma * d
+    #f_new = obj_function(x_new, A, reg_method, alpha_2)
 
     return x_new, f_new
 
 # Armijo rule
 
-def armijo(x, A, d, grad, reg_method, alpha_2,
-           alpha = 1.0, delta=0.5, c=1e-4):
+def armijo(x, A, Ax, d, grad, reg_method, alpha_2,
+           alpha, delta=0.5, c=1e-4):
 
-    f_x = obj_function(x, A, reg_method, alpha_2)
+    f_x = Ax_obj_func(x, Ax, reg_method, alpha_2)
     directional_derivative = float(grad.T @ d)
 
     while True:
@@ -383,8 +369,12 @@ def obj_function(x, A, reg_method, alpha_2 = 0.04):
         return float(x.T @ A @ x + 0.5 * (x.T @ x))
     elif reg_method == 'expreg':
         return float(x.T @ A @ x + alpha_2 * np.sum(np.exp(-5 * x) - 1))
-    elif reg_method == 'noreg':
-        return float(x.T @ A @ x)
+
+def Ax_obj_func(x, Ax, reg_method, alpha_2 = 0.04):
+    if reg_method == '2norm':
+        return float(x.T @ Ax + 0.5 * (x.T @ x))
+    elif reg_method == 'expreg':
+        return float(x.T @ Ax + alpha_2 * np.sum(np.exp(-5 * x) - 1))
 
 # LMO
 
@@ -412,6 +402,7 @@ def frank_wolfe(max_iter=5000,
     x = x0.copy()
     n=len(x)
     time_l = []
+    delta_gap = []
     n_clique = [greedy_verification(x, A)]
 
     # Regularization method
@@ -428,24 +419,18 @@ def frank_wolfe(max_iter=5000,
         f_history = [obj_function(x, A, reg_method, alpha_2)]
         time_l.append(time.time() - start_time)
 
-    # NO regularization
-    elif reg_method == 'noreg':
-        start_time = time.time()
-        f_history = [obj_function(x, A, reg_method)]
-        time_l.append(time.time() - start_time)
-
     for i in range(max_iter):
+        Ax = A @ x
         # Gradient
         if reg_method == '2norm':
             grad = 2 * A @ x + x
         elif reg_method == 'expreg':
             grad = 2 * A @ x - alpha_2 * 5 * np.exp(-5 * x)
-        elif reg_method == 'noreg':
-            grad = 2 * A @ x
 
         # LMO
         d_fw, s, fw_gap = LMO(x, grad)
-
+        delta_gap.append(fw_gap)
+        
         # Away direction
         if fw_variant != 'standard':
             support = np.flatnonzero(x.ravel() > 1e-12) # Find active set
@@ -488,7 +473,7 @@ def frank_wolfe(max_iter=5000,
         if step_strat == 'line_search':
             x_new, f_x = ex_line_search(x, A, d, reg_method, alpha_2, gamma_max)
         elif step_strat == 'armijo':
-            x_new, f_x = armijo(x, A, d, grad, reg_method,
+            x_new, f_x = armijo(x, A, Ax, d, grad, reg_method,
                                 alpha_2, alpha = gamma_max#, delta=0.5, c=1e-4
                                )
         elif step_strat == 'diminishing':
@@ -515,6 +500,7 @@ def frank_wolfe(max_iter=5000,
     results = {
              #'X' : x,
              #'Local_max' : local_maximum,
+             'Delta gap' : delta_gap,
              'Time' : time_l,
              'Clique' : n_clique,
              'Objective function' : f_history,
@@ -537,12 +523,12 @@ A = adj_matrix(dataset)
 # Multistart Experiments
 
 def experiments(fw_variant,
-                adj_mat,
-                n_trials,
-                max_iter,
                 regularization_method,
-                alpha_2,
                 step_strategy,
+                adj_mat = A,
+                n_trials = 100,
+                max_iter = 10000, 
+                alpha_2 = 0.04,
                 tolerance = 1e-3,
                 max_time = 60,
                 set_seed = 123):
@@ -564,9 +550,11 @@ def experiments(fw_variant,
                 tol = tolerance,
                 max_time = max_time)
 
-        results.append({
+        esults.append({
             "trial": trial,
             #"X": fw['X'],
+            #"Local_maximum": fw['Local_max'],
+            "Delta gap": fw['Delta gap'],
             "Clique": fw['Clique'],
             "Time": fw["Time"],
             "Objective function": fw["Objective function"],
@@ -575,19 +563,192 @@ def experiments(fw_variant,
 
     return results
 
-results = experiments(fw_variant = 'awaysteps',
+results = experiments(fw_variant = 'pairwise', # standard, awaysteps, pairwise
+                      regularization_method = 'expreg', #2norm, expreg
+                      step_strategy = 'armijo', # diminishing, armijo, line_search
+                      alpha_2 = 0.005, # alpha parameter of expreg
                       adj_mat = A,
                       n_trials = 100,
-                      max_iter = 2000,
-                      regularization_method = 'expreg', # noreg, 2norm, expreg
-                      alpha_2 = 0.04, # alpha parameter of expreg
-                      step_strategy = 'line_search', # diminishing, armijo, line_search
+                      max_iter = 10000, 
                       tolerance = 1e-3,
                       max_time = 60,
                       set_seed = 123)
 
-plots(results, max_clique=44, alpha=0.10)
-results_stats(results, name = dataset + ' - fw_2norm_exact_line_search')
+plots(results, max_clique=44)
+experiment = dataset + ' - afw_2norm_exact_line_search'
+results_stats(results, name = experiment)
+
+def multi_experiments(exp_num, algo_params, algo_names):
+
+    if len(algo_params) != exp_num or len(algo_names) != exp_num:
+        return 'Set the lists correctly!!!'
+
+    algo_res = []
+    
+    for i in range(exp_num):
+        results = experiments(fw_variant = algo_params[i][0],
+                      regularization_method = algo_params[i][1],
+                      step_strategy = algo_params[i][2],
+                      alpha_2 = algo_params[i][3],
+                      adj_mat = A,
+                      n_trials = 100,
+                      max_iter = 10000, 
+                      tolerance = 1e-3,
+                      max_time = 60,
+                      set_seed = 123)
+        
+        clique_sizes = [
+            exp["Clique"][-1]
+            for exp in results]
+        best_clique = np.max(clique_sizes)
+        max_clique_idx = [
+            i for i, clique in enumerate(clique_sizes)
+            if clique == best_clique]
+        best_idx = min(
+            max_clique_idx,
+            key=lambda i: results[i]["Time"][-1])
+
+        res = results[best_idx]
+        res['Name'] = algo_names[i]
+        
+        algo_res.append(res)
+
+        if i != exp_num-1:
+            sleep(30) # Pausa di un minuto per lasciare raffreddare il computer
+
+    return algo_res
+
+def algorithms_plots(experiments, max_clique):
+
+    fig, axes = plt.subplots(
+        nrows=3,
+        ncols=2,
+        figsize=(20, 15))
+
+    ax1, ax2, ax3, ax4, ax5, ax6 = axes.flatten()
+    
+    # General grid
+    for ax in axes.flatten():
+        ax.grid(
+            True,
+            linestyle="--",
+            linewidth=0.5,
+            alpha=0.7)
+
+    # Plots
+    for exp in experiments:
+
+        # Delta gap vs Iterations
+        ax1.plot(exp["Delta gap"],
+                 linewidth=2,
+                 label=exp['Name'])
+
+        # Delta gap vs Time
+        ax2.plot(exp["Time"], exp["Delta gap"],
+                 linewidth=2,
+                 label=exp['Name'])
+        
+        # Objective vs Iterations
+        ax3.plot(exp["Objective function"],
+                 linewidth=2,
+                 label=exp['Name'])
+
+        # Objective vs Time
+        ax4.plot(exp["Time"], exp["Objective function"],
+                 linewidth=2,
+                 label=exp['Name'])
+        
+        # Clique vs Iterations
+        ax5.plot(exp["Clique"],
+                 linewidth=2,
+                 label=exp['Name'])
+        
+        # Clique vs Time
+        ax6.plot(exp["Time"], exp["Clique"],
+                 linewidth=2,
+                 label=exp['Name'])
+
+    # Maximum clique reference
+    ax5.axhline(
+        max_clique,
+        linestyle="--",
+        color="green",
+        label=f"Known maximum = {max_clique}")
+
+    ax6.axhline(
+        max_clique,
+        linestyle="--",
+        color="green",
+        label=f"Known maximum = {max_clique}")
+
+    # Log scale for Delta gap
+    ax1.set_yscale("log")
+    ax2.set_yscale("log")
+
+    # Titles and labels
+    ax1.set_title("Delta gap vs Iterations")
+    ax1.set_xlabel("Iteration")
+    ax1.set_ylabel("Delta gap")
+
+    ax2.set_title("Delta gap vs Time")
+    ax2.set_xlabel("Time")
+    ax2.set_ylabel("Delta gap")
+    
+    ax3.set_title("Objective Function vs Iterations")
+    ax3.set_xlabel("Iteration")
+    ax3.set_ylabel("Objective")
+    
+    ax4.set_title("Objective Function vs Time")
+    ax4.set_xlabel("Time (seconds)")
+    ax4.set_ylabel("Objective")
+    
+    ax5.set_title("Clique vs Iterations")
+    ax5.set_xlabel("Iteration")
+    ax5.set_ylabel("Clique size")    
+
+    ax6.set_title("Clique vs Time")
+    ax6.set_xlabel("Time (seconds)")
+    ax6.set_ylabel("Clique size")
+
+    # Y limits for clique plots
+    all_cliques = [
+        clique
+        for exp in experiments
+        for clique in exp["Clique"]]
+
+    min_clique = min(all_cliques)
+
+    ax5.set_ylim(
+        min_clique - 1,
+        max_clique + 5)
+
+    ax6.set_ylim(
+        min_clique - 1,
+        max_clique + 5)
+
+    ax1.legend()
+    ax2.legend()
+    ax3.legend()
+    ax4.legend()
+    ax5.legend()
+    ax6.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+algo_params = [
+    ['standard', 'expreg', 'diminishing', 0.02],['standard', 'expreg', 'armijo', 0.02],['standard', 'expreg', 'line_search', 0.02],
+    ['awaysteps', 'expreg', 'diminishing', 0.02],['awaysteps', 'expreg', 'armijo', 0.02],['awaysteps', 'expreg', 'line_search', 0.02],
+    ['pairwise', 'expreg', 'diminishing', 0.02],['pairwise', 'expreg', 'armijo', 0.02],['pairwise', 'expreg', 'line_search', 0.02]
+]
+algo_names = [
+    'FW_expreg_dim', 'FW_expreg_a', 'FW_expreg_ls',
+    'AFW_expreg_dim', 'AFW_expreg_a', 'AFW_expreg_ls',
+    'PFW_expreg_dim', 'PFW_expreg_a', 'PFW_expreg_ls',
+]
+algo_res = multi_experiments(9, algo_params, algo_names)
+
+algorithms_plots(algo_res, max_clique=44)
 
 # Adjacency matrix in csv to visualize in Gephi
 #pd.DataFrame(A).to_csv(f'Data/{dataset}.csv')
